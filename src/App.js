@@ -7,28 +7,51 @@ import {nanoid} from "nanoid"
 import './App.css';
 
 function App() {
-  const [notes, setNotes] = React.useState([])
+  const [notes, setNotes] = React.useState( () =>
+    JSON.parse(localStorage.getItem("notes")) || [])
+
   const [currentNoteId, setCurrentNoteId] = React.useState(
       (notes[0] && notes[0].id) || ""
   )
+
+  React.useEffect(()=>{
+    localStorage.setItem("notes", JSON.stringify(notes))
+  }, [notes])
   
   function createNewNote() {
       const newNote = {
           id: nanoid(),
           body: "# Type your markdown note's title here"
       }
-      setNotes(prevNotes => [newNote, ...prevNotes])
+      setNotes(prevNotes => [...prevNotes, newNote])
       setCurrentNoteId(newNote.id)
   }
   
   function updateNote(text) {
-      setNotes(oldNotes => oldNotes.map(oldNote => {
-          return oldNote.id === currentNoteId
-              ? { ...oldNote, body: text }
-              : oldNote
-      }))
+    
+    setNotes(oldNotes => {
+        const newArr = []
+        for(let i = 0; i < oldNotes.length; i++) {
+            const oldNote = oldNotes[i]
+            if(oldNote.id === currentNoteId) {
+                newArr.unshift({ ...oldNote, body: text })
+            } else {
+                newArr.push(oldNote)
+            }
+        }
+        return newArr
+    })
+
+    //   setNotes(oldNotes => oldNotes.map(oldNote => {
+    //       return oldNote.id === currentNoteId
+    //           ? { ...oldNote, body: text }
+    //           : oldNote
+    //   }))
   }
-  
+  function deleteNote(event, noteId) {
+    event.stopPropagation()
+    setNotes(oldNotes => oldNotes.filter(note => note.id !== noteId))
+}
   function findCurrentNote() {
       return notes.find(note => {
           return note.id === currentNoteId
@@ -50,6 +73,7 @@ function App() {
                   currentNote={findCurrentNote()}
                   setCurrentNoteId={setCurrentNoteId}
                   newNote={createNewNote}
+                  deleteNote={deleteNote}
               />
               {
                   currentNoteId && 
